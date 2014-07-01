@@ -25,6 +25,10 @@ program find_bounding_cells
    !   Date:       31-Mar-2014
    !   Author:     Leo van Kampenhout
    !   Updates:    Add starting coordinates for Antartica, update comments.
+   ! 
+   !   Date:       01-Jul-2014
+   !   Author:     Leo van Kampenhout
+   !   Updates:    Adapt for EC-Earth.
    !
    ! ---------------------------------------------------------------------------|
  
@@ -34,21 +38,24 @@ program find_bounding_cells
    ! *** PARAMETERS
 
    ! This is the name of the data file we will read. 
-   character (len = *), parameter :: TOPO_NAME = "TOPO"
+   character (len = *), parameter :: TOPO_NAME = "tmask"
    character (len = *), parameter :: COAST_NAME = "COAST"
-   character (len = *), parameter :: XDIM = "nlon"
-   character (len = *), parameter :: YDIM = "nlat"
+   character (len = *), parameter :: XDIM = "x"
+   character (len = *), parameter :: YDIM = "y"
 
-#define ANTARTICA
+   ! Value that designates ocean in TOPO 
+   integer, parameter :: OCEAN = 1
+
+#define GREENLAND
 
 #ifdef GREENLAND
-   character (len = *), parameter :: FILE_NAME = "antartica/regions.nc"
-   integer, parameter :: IX_START = 311, IY_START = 369 ! Starting point inside landmass (Greenland)
+   character (len = *), parameter :: FILE_NAME = "../tmesh_mask_Grn.nc"
+   integer, parameter :: IX_START = 258, IY_START = 258 ! Starting point inside landmass (Greenland)
 #endif
 
 #ifdef ANTARTICA
-   character (len = *), parameter :: FILE_NAME = "antartica/regions.nc"
-   integer, parameter :: IX_START = 40, IY_START = 1 ! Starting point inside landmass (Antartica)
+   character (len = *), parameter :: FILE_NAME = "../tmesh_mask_Ant.nc"
+   integer, parameter :: IX_START = 318, IY_START = 10 ! Starting point inside landmass (Antartica)
 #endif
  
    ! *** LOCALS
@@ -106,7 +113,7 @@ program find_bounding_cells
    print *,'LANDMASS STARTING POINT: ', IX_START, IY_START
    print *, 'VALUE OF TOPO AT THIS POINT = ', data_in(IX_START,IY_START)
 
-   if (data_in(IX_START,IY_START) /= 1) then
+   if (data_in(IX_START,IY_START) == OCEAN) then
       stop 'ERROR: starting point not in landmass'
    endif
 
@@ -127,7 +134,7 @@ program find_bounding_cells
 
    call check( nf90_redef(ncid) )
    call check( nf90_put_att(ncid, varid, "history", "written by program: find_bounding_cells"))
-   call check( nf90_put_att(ncid, varid, "long_name", "Greenland coastal cells"))
+   call check( nf90_put_att(ncid, varid, "long_name", "coastal cells"))
    call check( nf90_enddef(ncid) )
 
 
@@ -155,7 +162,7 @@ contains
 
       integer :: ixx, iyy, np
 
-      if (data_in(ix,iy) == 0) then
+      if (data_in(ix,iy) == OCEAN) then
          ! coastal point
          data_out(ix,iy) = 1
          return

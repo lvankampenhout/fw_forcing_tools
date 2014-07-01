@@ -1,0 +1,18 @@
+
+# make -f Makefile.mac
+
+# The following lines assume packages 'netcdf' and 'netcdf-fortran' have been installed with macports 
+NETCDF_INCLUDE=/opt/local/include/
+NETCDF_LIB=/opt/local/lib/
+
+FC=gfortran
+FFLAGS=-I$(NETCDF_INCLUDE) -L$(NETCDF_LIB) -lnetcdf -lnetcdff -cpp
+
+BIN=find_bounding_cells
+
+all: find
+
+find: 
+	${FC} ${FFLAGS} find_bounding_cells.f90 -o ${BIN} 
+
+
