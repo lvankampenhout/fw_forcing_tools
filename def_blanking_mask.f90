@@ -37,6 +37,10 @@ program def_blanking_mask
    !   Author:     Leo van Kampenhout
    !   Updates:    Remove canadian arctic from mask.
    !
+   !   Date:       08-Aug-2014
+   !   Author:     Leo van Kampenhout
+   !   Updates:    Remove magic number 320.
+   !
    ! ---------------------------------------------------------------------------|
  
    use netcdf
@@ -47,8 +51,8 @@ program def_blanking_mask
    ! This is the name of the data file we will read. 
    character (len = *), parameter :: TOPO_NAME = "TOPO"
    character (len = *), parameter :: MASK_NAME = "BLK_MASK"
-   character (len = *), parameter :: XDIM = "nlon"
-   character (len = *), parameter :: YDIM = "nlat"
+   character (len = *), parameter :: NLON_S = "nlon"
+   character (len = *), parameter :: NLAT_S = "nlat"
 
    ! How many cells wide is the masked (ocean) region
    integer, parameter :: WIDTH = 10
@@ -65,7 +69,7 @@ program def_blanking_mask
    integer :: idt
 
    ! We are reading 3D data: x, y, t
-   integer :: nx, ny, nt
+   integer :: nlon, nlat, nt
    integer, allocatable :: data_in(:,:) ! Only X/Y
    integer, allocatable :: data_out(:,:) ! Only X/Y
  
@@ -88,19 +92,19 @@ program def_blanking_mask
    ! the file.
    call check( nf90_open(FILE_NAME, NF90_WRITE, ncid) )
  
-   call check( nf90_inq_dimid(ncid, XDIM, dimid) )
-   call check( nf90_inquire_dimension(ncid, dimid, len=nx))
+   call check( nf90_inq_dimid(ncid, NLON_S, dimid) )
+   call check( nf90_inquire_dimension(ncid, dimid, len=nlon))
    idx = dimid
 
-   call check( nf90_inq_dimid(ncid, YDIM, dimid) )
-   call check( nf90_inquire_dimension(ncid, dimid, len=ny))
+   call check( nf90_inq_dimid(ncid, NLAT_S, dimid) )
+   call check( nf90_inquire_dimension(ncid, dimid, len=nlat))
    idy = dimid
 
-   print *,'FOUND DIMENSIONS ',XDIM,', ', YDIM, ' = ', nx, ny
+   print *,'FOUND DIMENSIONS ', NLON_S,', ', NLAT_S, ' = ', nlon, nlat
    
-   allocate(data_in(nx,ny))
-   allocate(data_out(nx,ny))
-   count = (/ nx, ny /)
+   allocate(data_in(nlon,nlat))
+   allocate(data_out(nlon,nlat))
+   count = (/ nlon, nlat /)
    start = (/  1,  1 /)
  
    ! Get the varid of the data variable, based on its name.
@@ -147,22 +151,23 @@ program def_blanking_mask
    ! *** START of search
    data_out = 0
 
-   ! Mask all land points
+   ! Figure out land points
    call explore_point_lnd(IX_START, IY_START)
    call explore_point_lnd(IX_START2, IY_START2)
 
-   ! Mask all ocean points
-   do iy = 1, ny
-   do ix = 1, nx
+   ! Then, figure out coastal ocean points around those
+   do iy = 1, nlat
+   do ix = 1, nlon
       if (data_in(ix,iy) == 0) then ! ocean
          ! Loop mask land cells
-         do iy2 = 1, ny
-         do ix2 = 1, nx
+         do iy2 = 1, nlat
+         do ix2 = 1, nlon
             if (data_out(ix2,iy2) == 2) then
                ! Test distance to land mass
                dy = abs(iy2 - iy)
-               dx = min( abs(ix2 - ix), &
-                         320 - abs(ix2 - ix))
+
+               ! also wrap around in longitude dimension
+               dx = min( abs(ix2 - ix), nlon - abs(ix2 - ix))
                if ( dx + dy <= WIDTH) then
                   ! Add ocean point to mask
                   data_out(ix,iy) = 1
@@ -181,12 +186,7 @@ program def_blanking_mask
    ! greenland and artartica)
    data_out(230:236,364:373) = 0
 
-
-
    ! *** END of search
-
-   ! All mask points should have value 1
-   !where (data_out ==2) data_out = 1
 
    ! Insert data values in file
    call check( nf90_put_var(ncid, varid, data_out) )
@@ -236,8 +236,8 @@ contains
          end select 
          
          ! Only process points that are on the grid
-         if (ixx > 0 .and. ixx < nx+1 .and.  &
-             iyy > 0 .and. iyy < ny+1)       & 
+         if (ixx > 0 .and. ixx < nlon+1 .and.  &
+             iyy > 0 .and. iyy < nlat+1)       & 
             call explore_point_lnd(ixx,iyy)
 
       enddo neighbours
