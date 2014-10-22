@@ -8,11 +8,13 @@ NETCDF_LIB=/opt/local/lib/
 FC=gfortran
 FFLAGS=-I$(NETCDF_INCLUDE) -L$(NETCDF_LIB) -lnetcdf -lnetcdff -cpp
 
-BIN=find_bounding_cells
 
 all: find
 
 find: 
-	${FC} ${FFLAGS} find_bounding_cells.f90 -o ${BIN} 
+	${FC} ${FFLAGS} find_bounding_cells.f90 -o find_bounding_cells
+
+mask: 
+	${FC} ${FFLAGS} def_blanking_mask.f90 -o def_blanking_mask
 
 

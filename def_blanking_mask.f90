@@ -45,17 +45,16 @@ program def_blanking_mask
    ! *** PARAMETERS
 
    ! This is the name of the data file we will read. 
-   character (len = *), parameter :: TOPO_NAME = "TOPO"
+   character (len = *), parameter :: TOPO_NAME = "tmask"
    character (len = *), parameter :: MASK_NAME = "BLK_MASK"
-   character (len = *), parameter :: XDIM = "nlon"
-   character (len = *), parameter :: YDIM = "nlat"
+   character (len = *), parameter :: XDIM = "x"
+   character (len = *), parameter :: YDIM = "y"
 
    ! How many cells wide is the masked (ocean) region
-   integer, parameter :: WIDTH = 10
+   integer, parameter :: WIDTH = 5
 
-   character (len = *), parameter :: FILE_NAME = "blanking_mask/regions.nc"
-   integer, parameter :: IX_START = 311, IY_START = 369 ! Starting point inside landmass (Greenland)
-   integer, parameter :: IX_START2 = 40, IY_START2 = 1 ! Starting point inside landmass (Antartica)
+   character (len = *), parameter :: FILE_NAME = "../greenland_mask_w5.nc"
+   integer, parameter :: IX_START = 257, IY_START = 257 ! Starting point inside landmass (Greenland)
  
    ! *** LOCALS
 
@@ -112,16 +111,11 @@ program def_blanking_mask
    ! Now data_in contains the field TOPO
    print *,'LANDMASS STARTING POINT: ', IX_START, IY_START
    print *, 'VALUE OF TOPO AT THIS POINT = ', data_in(IX_START,IY_START)
-   print *,'LANDMASS STARTING POINT: ', IX_START2, IY_START2
-   print *, 'VALUE OF TOPO AT THIS POINT = ', data_in(IX_START2,IY_START2)
 
-   if (data_in(IX_START,IY_START) /= 1) then
+   if (data_in(IX_START,IY_START) /= 0) then
       stop 'ERROR: starting point not in landmass'
    endif
 
-   if (data_in(IX_START2,IY_START2) /= 1) then
-      stop 'ERROR: starting point not in landmass'
-   endif
 
 
    if (nf90_inq_varid(ncid, MASK_NAME, varid) /= nf90_noerr ) then
@@ -149,12 +143,11 @@ program def_blanking_mask
 
    ! Mask all land points
    call explore_point_lnd(IX_START, IY_START)
-   call explore_point_lnd(IX_START2, IY_START2)
 
    ! Mask all ocean points
    do iy = 1, ny
    do ix = 1, nx
-      if (data_in(ix,iy) == 0) then ! ocean
+      if (data_in(ix,iy) == 1) then ! ocean
          ! Loop mask land cells
          do iy2 = 1, ny
          do ix2 = 1, nx
@@ -175,13 +168,6 @@ program def_blanking_mask
       endif
    enddo
    enddo
-
-   ! Manually Exclude Canadian arctic from mask... (This is kind of a hack to
-   ! prevent the Canadian runoff to be wiped away since it is not replaced like
-   ! greenland and artartica)
-   data_out(230:236,364:373) = 0
-
-
 
    ! *** END of search
 
@@ -206,7 +192,7 @@ contains
       integer :: ixx, iyy, np
 
       ! ocean cell: do nothing for now
-      if (data_in(ix,iy) == 0) &
+      if (data_in(ix,iy) == 1) &
          return
 
       ! already masked: do nothing
