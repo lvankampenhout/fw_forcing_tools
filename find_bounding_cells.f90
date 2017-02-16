@@ -39,15 +39,15 @@ program find_bounding_cells
    character (len = *), parameter :: XDIM = "nlon"
    character (len = *), parameter :: YDIM = "nlat"
 
-#define ANTARTICA
+#define ANTARCTICA
 
 #ifdef GREENLAND
-   character (len = *), parameter :: FILE_NAME = "antartica/regions.nc"
+   character (len = *), parameter :: FILE_NAME = "greenland_regions.nc"
    integer, parameter :: IX_START = 311, IY_START = 369 ! Starting point inside landmass (Greenland)
 #endif
 
-#ifdef ANTARTICA
-   character (len = *), parameter :: FILE_NAME = "antartica/regions.nc"
+#ifdef ANTARCTICA
+   character (len = *), parameter :: FILE_NAME = "antarctica_regions.nc"
    integer, parameter :: IX_START = 40, IY_START = 1 ! Starting point inside landmass (Antartica)
 #endif
  
@@ -75,6 +75,13 @@ program find_bounding_cells
    ! ---------------------------------------------------------------------------|
    ! *** Start of executable code *** 
    ! ---------------------------------------------------------------------------|
+
+#ifdef GREENLAND
+   write(*,*) 'Greenland'
+#endif
+#ifdef ANTARCTICA
+   write(*,*) 'Antarctica'
+#endif
 
 
    ! Open the file. NF90_NOWRITE tells netCDF we want read-only access to
